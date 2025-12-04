@@ -1,121 +1,95 @@
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ *  Esta clase que representa el carrito de compra ya con el codigo refactorizado
+ *  utilizando una lista de objetos de la clase Prodcuto. Incluyendo metodos para añadir, eliminar y
+ *  consultar el contenido del carrito.
+ *  --------------------------------------
+ *  Implemento mejoras de eliminacion de listas, uso de streams, mejor cohesion y estructura interna
+ *  *  del codigo
+ *
+ *   @author Carlos Cobos
+ *   @version 1.1
+ *   @since 03/12/2025
+ */
 
 public class ShoppingCart {
 
-    // Listas paralelas para guardar los datos de los productos
-    // (esto se podría mejorar creando una clase Producto, pero así es más simple)
-    private ArrayList<String> nombres = new ArrayList<>();
-    private ArrayList<Double> precios = new ArrayList<>();
-    private ArrayList<String> categorias = new ArrayList<>();
+    /**
+     * Lista que contiene todos los productos del carrito
+     */
+    private List<Producto> productos = new ArrayList<>();
 
     /**
-     * Añade un producto al carrito.
+     * Agrega un prodcuto al carrito
+     *
+     * @param nombre
+     * @param precio
+     * @param categoria
      */
     public void agregarProducto(String nombre, double precio, String categoria) {
         if (nombre != null && categoria != null) {
-            nombres.add(nombre);
-            precios.add(precio);
-            categorias.add(categoria);
+            productos.add(new Producto(nombre, precio, categoria));
         }
     }
 
     /**
-     * Elimina del carrito todos los productos que tengan ese nombre.
+     *Elimina todos los productos que coincidan por nombre.
+     * Ignora mayusculas y minusculas
+     *
+     * @param nombre
      */
     public void eliminarProductoPorNombre(String nombre) {
-        if (nombre == null) {
-            return;
-        }
-
-        for (int i = 0; i < nombres.size(); i++) {
-            String nombreActual = nombres.get(i);
-            if (nombre.equalsIgnoreCase(nombreActual)) {
-                // Eliminamos en las tres listas el elemento de la misma posición
-                nombres.remove(i);
-                precios.remove(i);
-                categorias.remove(i);
-                i--; // para no saltarnos ningún elemento
-            }
-        }
+        if (nombre == null) return;
+        productos.removeIf(p -> p.getNombre().equalsIgnoreCase(nombre));
     }
 
     /**
-     * Calcula el precio total de todos los productos del carrito.
+     * Calcula el precio total de los productos
+     *
+     * @return el precio total
      */
     public double calcularTotal() {
-        double total = 0;
-
-        for (int i = 0; i < precios.size(); i++) {
-            Double precio = precios.get(i);
-            if (precio != null) {
-                total = total + precio;
-            }
-        }
-
-        return total;
+        return productos.stream()
+                .mapToDouble(Producto::getPrecio)
+                .sum();
     }
 
     /**
-     * Calcula el precio total de los productos de una categoría concreta.
+     * Calcula el total en una categoria
+     *
+     * @param categoria
+     * @return el total de los productos de essa categoria
      */
-    public double calcularTotalPorCategoria(String categoriaBuscada) {
-        double total = 0;
+    public double calcularTotalPorCategoria(String categoria) {
+        if (categoria == null) return 0;
 
-        if (categoriaBuscada == null) {
-            return 0;
-        }
-
-        for (int i = 0; i < categorias.size(); i++) {
-            String categoriaActual = categorias.get(i);
-            Double precioActual = precios.get(i);
-
-            if (categoriaActual != null &&
-                    categoriaActual.equalsIgnoreCase(categoriaBuscada)) {
-
-                total = total + precioActual;
-            }
-        }
-
-        return total;
+        return productos.stream()
+                .filter(p -> p.getCategoria().equalsIgnoreCase(categoria))
+                .mapToDouble(Producto::getPrecio)
+                .sum();
     }
-
     /**
-     * Devuelve el índice del producto más caro del carrito.
-     * Si el carrito está vacío, devuelve -1.
+     * Busca el producto mas caro del carrito
+     *
+     * @return el producto mas caro que haya
      */
-    public int buscarIndiceProductoMasCaro() {
-        if (precios.isEmpty()) {
-            return -1;
-        }
-
-        int indiceMasCaro = 0;
-        double precioMasAlto = precios.get(0);
-
-        for (int i = 1; i < precios.size(); i++) {
-            Double precioActual = precios.get(i);
-            if (precioActual > precioMasAlto) {
-                precioMasAlto = precioActual;
-                indiceMasCaro = i;
-            }
-        }
-
-        return indiceMasCaro;
+    public Optional<Producto> buscarProductoMasCaro() {
+        return productos.stream()
+                .max(Comparator.comparingDouble(Producto::getPrecio));
     }
 
     /**
-     * Muestra por pantalla el ticket del carrito.
+     * Imprime el ticket con todos los productos
      */
     public void mostrarTicket() {
         System.out.println("===== CARRITO DE LA COMPRA =====");
 
-        for (int i = 0; i < nombres.size(); i++) {
-            String nombre = nombres.get(i);
-            Double precio = precios.get(i);
-            String categoria = categorias.get(i);
-
-            System.out.println((i + 1) + ". " + nombre
-                    + " - " + precio + " €"
-                    + " (" + categoria + ")");
+        for (int i = 0; i < productos.size(); i++) {
+            System.out.println((i + 1) + ". " + productos.get(i));
         }
 
         System.out.println("--------------------------------");
@@ -124,39 +98,31 @@ public class ShoppingCart {
     }
 
     /**
-     * Método main de prueba.
+     * metodo de prueba para imprimir el funcionamiento de la clase
+     *
+     * @param args argumentos de ejecucion
      */
+
     public static void main(String[] args) {
 
-        CarritoCompra carrito = new CarritoCompra();
+        ShoppingCart carrito = new ShoppingCart();
 
-        // Añadimos algunos productos de ejemplo
         carrito.agregarProducto("Teclado", 25.99, "Informática");
         carrito.agregarProducto("Monitor", 199.99, "Informática");
         carrito.agregarProducto("Libro Java", 35.50, "Libros");
         carrito.agregarProducto("Ratón", 15.00, "Informática");
 
-        // Mostramos el ticket completo
         carrito.mostrarTicket();
 
-        // Mostramos el total solo de una categoría
-        double totalLibros = carrito.calcularTotalPorCategoria("Libros");
-        System.out.println("Total en libros: " + totalLibros + " €");
+        System.out.println("Total en libros: " +
+                carrito.calcularTotalPorCategoria("Libros") + " €");
 
-        // Buscamos el producto más caro
-        int indiceMasCaro = carrito.buscarIndiceProductoMasCaro();
-        if (indiceMasCaro != -1) {
-            System.out.println("Producto más caro: "
-                    + carrito.nombres.get(indiceMasCaro)
-                    + " (" + carrito.precios.get(indiceMasCaro) + " €)");
-        }
+        carrito.buscarProductoMasCaro().ifPresent(p ->
+                System.out.println("Producto más caro: " + p));
 
-        // Ejemplo de eliminación
-        System.out.println();
-        System.out.println("Eliminando 'Ratón' del carrito...");
+        System.out.println("\nEliminando 'Ratón' del carrito...");
         carrito.eliminarProductoPorNombre("Ratón");
 
-        // Volvemos a mostrar el ticket
         carrito.mostrarTicket();
     }
 }
